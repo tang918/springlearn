@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                            http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+                            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+
+
+
+    <!--开启组件扫描
+        1. 如果扫描多个包，多个包使用逗号隔开
+    -->
+    <context:component-scan base-package="edu.uestc.spring"></context:component-scan>
+    <aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+
+    <!--开启事务注解-->
+    <tx:annotation-driven transaction-manager="dataSourceTransactionManager"></tx:annotation-driven>
+
+<!--    &lt;!&ndash; 创建对象&ndash;&gt;-->
+<!--    <bean id="book" class="edu.uestc.spring.aop.xml.Book"></bean>-->
+<!--    <bean id="bookProxy" class="edu.uestc.spring.aop.xml.BookProxy"></bean>-->
+
+<!--    &lt;!&ndash;配置aop增强&ndash;&gt;-->
+<!--    <aop:config>-->
+<!--        &lt;!&ndash;切入点&ndash;&gt;-->
+<!--        <aop:pointcut id="p" expression="execution(* edu.uestc.spring.aop.xml.Book.buy(..))"/>-->
+
+<!--        &lt;!&ndash;配置切面&ndash;&gt;-->
+<!--        <aop:aspect ref="bookProxy">-->
+<!--            &lt;!&ndash; 增强作用在具体的方法上&ndash;&gt;-->
+<!--            <aop:before method="before" pointcut-ref="p"></aop:before>-->
+<!--        </aop:aspect>-->
+<!--    </aop:config>-->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+    <!--配置数据库连接池-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${prop.driverClass}"></property>
+        <property name="url" value="${prop.url}"></property>
+        <property name="username" value="${prop.userName}"></property>
+        <property name="password" value="${prop.password}"></property>
+    </bean>
+
+    <!--JdbcTemplate对象，注入DataSource-->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <!--注入dataSource-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <bean id="bookService" class="edu.uestc.spring.jdbctemplate.service.BookService"></bean>
+    <bean id="userService" class="edu.uestc.spring.tx.service.UserService"></bean>
+
+    <bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--配置通知-->
+    <tx:advice id="txadvice">
+        <tx:attributes>
+            <!--指定在哪种规则的方法上面添加事务-->
+            <tx:method name="accountMoney" propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!--配置切入点和切面-->
+    <aop:config>
+        <!-- 配置切入点-->
+        <aop:pointcut id="pt" expression="execution(* edu.uestc.spring.tx.service.UserService.*(..))"/>
+        <!--配置切面-->
+        <aop:advisor advice-ref="txadvice" pointcut-ref="pt"></aop:advisor>
+    </aop:config>
+
+</beans>
